@@ -1,15 +1,8 @@
-"""Collect observable response records from frozen LLM episode snapshots.
+"""Collect observable response records from public interaction snapshots.
 
-The original Overcooked host obtains a public snapshot, asks the frozen model
-for one legal partner action, advances the environment, and records the
-observable result.  Hanabi and CoBlock expose different environment objects,
-but use the same data contract here: one input row is one pre-decision public
-snapshot and one provider call supplies the partner response.  An environment
-adapter can replace the snapshot source without changing provider handling or
-the downstream processors.
-
-This module does not store raw model text or hidden reasoning.  It stores only
-the parsed legal response and safe provider accounting metadata.
+Each input row is one pre-decision public snapshot, and one provider call
+supplies the partner response. The collector stores the parsed legal response
+and provider accounting metadata.
 """
 
 from __future__ import annotations
@@ -182,11 +175,8 @@ def collect_snapshots(
                 item["window_status"] = "complete"
                 item["response_window"] = {"status": "complete", "steps": 1}
                 item["collection_status"] = "complete"
-                # The generic collector is the host boundary.  With the
-                # snapshot source used here, the selected legal action is
-                # recorded as a completed replay decision; a native HLE or
-                # CoBlock executor can replace this field with its transition
-                # acknowledgement without changing the downstream schema.
+                # Snapshot collection records the selected legal action as a
+                # completed one-step transition.
                 item["execution_status"] = "snapshot_replay"
                 item["collection_step"] = index
                 item["provider_metadata"] = _provider_metadata(reply)

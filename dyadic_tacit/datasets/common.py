@@ -1,9 +1,4 @@
-"""Shared, lossless utilities for the three paper dataset adapters.
-
-The adapters intentionally do not fabricate labels or favorable snapshots.  A
-source row that has no response is retained with an explicit missing status,
-so coverage denominators remain visible in later audit code.
-"""
+"""Shared, lossless utilities for the three paper dataset adapters."""
 
 from __future__ import annotations
 
@@ -204,9 +199,8 @@ def usage_value(row: Mapping[str, Any], response: Mapping[str, Any] | None, mapp
         return direct
     if response is None:
         return None
-    # Some exports store the observed usage beside the action inside the
-    # response object. Preserve that value before consulting any optional
-    # external mapping; never invent a label from the action name.
+        # Preserve an observed usage beside the action before consulting an
+        # optional external mapping.
     nested = first(response, "usage", "usage_label", "usage_id")
     if nested is not None:
         return nested
@@ -232,9 +226,8 @@ def build_record(
     usage = usage_value(row, response_value, usage_mapping, dataset)
     semantic_hash = None
     if response_value is not None:
-        # The appendix requires complete C to be retained while qualification
-        # and guidance use its fixed U projection.  Keep this import lazy so
-        # the generic JSON/CSV utilities remain usable independently.
+        # Retain complete C while qualification and guidance use its fixed U
+        # projection. The import remains lazy for generic record utilities.
         from .semantics import semantic_usage, semantics_for
         canonical_response, semantic_usage_value = semantic_usage(dataset, response_value, row)
         if usage is None:

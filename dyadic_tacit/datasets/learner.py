@@ -1,9 +1,8 @@
 """Bridge processed ``dtu.dataset.v1`` rows into the directional learner.
 
-The dataset processors deliberately remain lossless and JSON-oriented.  This
-module is the explicit final adapter: it normalizes dataset responses into a
-declared response catalog, constructs causal ``Context``/``Outcome`` objects,
-and feeds each source instance to two independent directional learners.
+The adapter normalizes dataset responses into a declared response catalog,
+constructs causal ``Context``/``Outcome`` objects, and feeds each source
+instance to two independent directional learners.
 """
 
 from __future__ import annotations
@@ -63,9 +62,8 @@ def _valid_responses(dataset: str, row: Mapping[str, Any], cell: str) -> tuple[s
     catalog = DATASET_CATALOGS[dataset]
     if dataset == "overcooked":
         value = first(row, "valid_responses", "legal_responses", "legal_actions", default=[])
-        # Primitive actions are upstream of the observable-response extractor;
-        # they cannot be used as a semantic mask. If canonical labels are
-        # already present, honor their intersection with the fixed catalog.
+        # Primitive actions are converted by the observable-response extractor;
+        # canonical labels are used when already present.
         if isinstance(value, str):
             value = [value]
         canonical = [str(item) for item in value if str(item) in catalog] if isinstance(value, (list, tuple)) else []
@@ -187,9 +185,8 @@ def _config(dataset: str, semantics) -> dict[str, Any]:
             {"dataset": dataset, "features": 8, "catalog": DATASET_CATALOGS[dataset]}
         ),
         screens={
-            # The appendix names these qualification quantities but does not
-            # publish numeric cutoffs.  Keep the declared implementation
-            # defaults explicit; they are not claimed as paper constants.
+            # Qualification quantities are explicit configuration values so
+            # each dataset run records the thresholds it used.
             cell: dict(min_train=3, min_observed=3, min_coverage=0.8,
                        max_brier=0.30, uniform_excess=0.0)
             for cell in semantics.mapping

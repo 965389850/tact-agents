@@ -1,4 +1,4 @@
-"""A host boundary, not a replacement simulator or central joint controller."""
+"""Host boundary for independent directional learners."""
 from dataclasses import asdict
 import copy
 from .contracts import stable_hash
@@ -95,8 +95,8 @@ class IndependentDyadRunnerV3:
 
     Host supplies legal_contexts/task reset, execute(context, private_prompt) -> Outcome.
     It never receives learners or an evaluator joint-state summary.
-    A concrete environment host supplies this protocol without exposing
-    learner state to the provider.
+    The host supplies this protocol without exposing learner state to the
+    provider.
     """
     def __init__(self, learners):
         self.learners = dict(learners)

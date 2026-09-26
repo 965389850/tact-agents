@@ -24,7 +24,7 @@ def _timing(value: Any, default: str) -> str:
     return aliases.get(raw, default)
 
 
-# Overcooked complete responses follow the original handoff ontology.
+# Overcooked complete responses use the handoff ontology.
 _OV_TARGETS = {
     "HANDOFF": ("ACCEPT_UPSTREAM_OUTPUT", "WAIT_FOR_HANDOFF"),
     "COMPLEMENT": ("PREPARE_DOWNSTREAM_HANDOFF", "EXECUTE_COMPLEMENTARY_STAGE"),

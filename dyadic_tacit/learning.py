@@ -206,8 +206,8 @@ class DirectionalLearnerV3:
         target = Path(path)
         target.parent.mkdir(parents=True, exist_ok=True)
         portable = copy.deepcopy(self)
-        # A checkpoint may be shared with an anonymous submission. Keep log
-        # locations relocatable instead of serializing the caller's home path.
+        # Keep log locations relocatable instead of serializing the caller's
+        # local filesystem path.
         portable.output = f'events-{self.direction.self_agent}'
         for slot in (portable.candidate, portable.active):
             if slot is not None:
@@ -236,12 +236,11 @@ class DirectionalLearnerV3:
 
     @staticmethod
     def load(path, expected_identity, device='cpu', output=None):
-        # Trusted project-generated checkpoint only; never load untrusted pickle.
+        # Checkpoints are trusted project-generated state files.
         payload = torch.load(path, map_location=device, weights_only=False)
         if payload.get('schema_version') != 3 or payload.get('identity') != expected_identity or payload.get('checkpoint_commit_marker') != 'COMPLETE':
             raise ValueError('LEGACY_OR_INCOMPATIBLE_CHECKPOINT')
-        # Training/replay use only the learner-owned RNG, stored inside learner.
-        # Global torch/CUDA states retained for provenance, not installed over another direction.
+        # Restore the learner state without replacing the caller's global RNG.
         learner = payload['learner']
         learner.output = str(Path(output) if output is not None else Path(path).parent / learner.output)
         for slot in (learner.candidate, learner.active):

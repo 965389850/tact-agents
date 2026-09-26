@@ -93,10 +93,8 @@ class UsageSemantics:
         self.actionability_policy = actionability_policy
         if not justification or not mapping:
             raise ValueError('MISSING_USAGE_SEMANTICS')
-        # The benchmark response alphabet is dataset-specific.  The original
-        # fixture used at most four usage labels, but the appendix's complete
-        # Overcooked ontology retains relation and timing, so a fixed four-label
-        # ceiling would incorrectly reject a valid response projection.
+        # Response alphabets are dataset-specific; usage projections may
+        # contain any finite number of declared labels.
         for table in self.mapping.values():
             usages = set(table.values())
             if not usages or not usages <= set(templates):
