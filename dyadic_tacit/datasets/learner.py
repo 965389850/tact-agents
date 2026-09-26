@@ -271,7 +271,6 @@ def train_processed_dataset(
         "schema_version": 1,
         "status": "DATASET_LEARNER_ADAPTER_COMPLETE",
         "dataset": dataset,
-        "source": str(input_path),
         "source_split": source_split,
         "training_partition": "formation",
         "instances": len(grouped),

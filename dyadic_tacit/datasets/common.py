@@ -35,6 +35,14 @@ def first(row: Mapping[str, Any], *names: str, default: Any = None) -> Any:
     return default
 
 
+def source_digest(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return "sha256:" + digest.hexdigest()
+
+
 def load_records(path: str | Path) -> list[dict[str, Any]]:
     """Read JSON, JSONL, or CSV files, recursively when *path* is a folder."""
     root = Path(path)
@@ -45,6 +53,7 @@ def load_records(path: str | Path) -> list[dict[str, Any]]:
         raise ValueError(f"no JSON/JSONL/CSV input files found at {root}")
     out: list[dict[str, Any]] = []
     for file in files:
+        source_id = source_digest(file)
         suffix = file.suffix.lower()
         if suffix == ".csv":
             with file.open(newline="", encoding="utf-8") as handle:
@@ -65,9 +74,11 @@ def load_records(path: str | Path) -> list[dict[str, Any]]:
                 rows = [json.loads(line) for line in text.splitlines() if line.strip()]
         for row_index, row in enumerate(rows):
             if not isinstance(row, Mapping):
-                raise ValueError(f"{file}:{row_index + 1} is not an object")
+                raise ValueError(f"source {source_id}, row {row_index + 1} is not an object")
             item = dict(row)
-            item["_source_file"] = str(file)
+            # Content-addressed provenance avoids serializing file names or
+            # local paths into shared data artifacts.
+            item["_source_file"] = source_id
             item["_source_row"] = row_index
             out.append(item)
     return out

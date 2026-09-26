@@ -171,7 +171,9 @@ def collect_snapshots(
     completed = missing = 0
     with output.open("w", encoding="utf-8") as handle:
         for index, row in enumerate(rows):
-            item = dict(row)
+            # Reader bookkeeping is internal and must not copy a local input
+            # path into a potentially shared collection artifact.
+            item = {key: value for key, value in row.items() if not str(key).startswith("_")}
             legal = _legal(item)
             try:
                 reply = provider.complete(_prompt(dataset, item, legal), role="partner")
@@ -202,8 +204,6 @@ def collect_snapshots(
     return {
         "status": "RESPONSE_COLLECTION_COMPLETE" if not missing else "RESPONSE_COLLECTION_PARTIAL",
         "dataset": dataset,
-        "input": str(input_path),
-        "output": str(output),
         "records": len(rows),
         "complete_responses": completed,
         "missing_responses": missing,

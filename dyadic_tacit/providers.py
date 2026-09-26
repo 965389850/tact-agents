@@ -62,8 +62,15 @@ class _HttpProvider:
         self.client = client or httpx.Client(timeout=timeout, trust_env=False)
 
     def _post(self, url: str, *, headers: Mapping[str, str], payload: Mapping[str, Any]) -> dict:
-        response = self.client.post(url, headers=dict(headers), json=dict(payload))
-        response.raise_for_status()
+        try:
+            response = self.client.post(url, headers=dict(headers), json=dict(payload))
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            # In Gemini, the API key is part of the request URL. HTTPX's
+            # default exception includes that URL; expose only the status.
+            raise ValueError(f'PROVIDER_HTTP_STATUS:{exc.response.status_code}') from None
+        except httpx.RequestError:
+            raise ValueError('PROVIDER_REQUEST_FAILED') from None
         data = response.json()
         if not isinstance(data, dict):
             raise ValueError("PROVIDER_RESPONSE_NOT_OBJECT")

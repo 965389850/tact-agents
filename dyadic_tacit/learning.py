@@ -205,7 +205,18 @@ class DirectionalLearnerV3:
             raise ValueError('CHECKPOINT_REQUIRES_INSTANCE_BOUNDARY')
         target = Path(path)
         target.parent.mkdir(parents=True, exist_ok=True)
-        payload = dict(schema_version=3, identity=self.identity, learner=self,
+        portable = copy.deepcopy(self)
+        # A checkpoint may be shared with an anonymous submission. Keep log
+        # locations relocatable instead of serializing the caller's home path.
+        portable.output = f'events-{self.direction.self_agent}'
+        for slot in (portable.candidate, portable.active):
+            if slot is not None:
+                ledger = slot.get('ledger', slot.get('monitor'))
+                ledger.path = str(Path(portable.output) / 'predictions.jsonl')
+        portable.records = []
+        portable.pending = {}
+        portable.events = []
+        payload = dict(schema_version=3, identity=self.identity, learner=portable,
                        torch_rng=torch.get_rng_state(),
                        cuda_rng=torch.cuda.get_rng_state_all() if torch.cuda.is_available() else [],
                        checkpoint_commit_marker='COMPLETE')
@@ -224,14 +235,20 @@ class DirectionalLearnerV3:
                 os.unlink(temp)
 
     @staticmethod
-    def load(path, expected_identity, device='cpu'):
+    def load(path, expected_identity, device='cpu', output=None):
         # Trusted project-generated checkpoint only; never load untrusted pickle.
         payload = torch.load(path, map_location=device, weights_only=False)
         if payload.get('schema_version') != 3 or payload.get('identity') != expected_identity or payload.get('checkpoint_commit_marker') != 'COMPLETE':
             raise ValueError('LEGACY_OR_INCOMPATIBLE_CHECKPOINT')
         # Training/replay use only the learner-owned RNG, stored inside learner.
         # Global torch/CUDA states retained for provenance, not installed over another direction.
-        return payload['learner']
+        learner = payload['learner']
+        learner.output = str(Path(output) if output is not None else Path(path).parent / learner.output)
+        for slot in (learner.candidate, learner.active):
+            if slot is not None:
+                ledger = slot.get('ledger', slot.get('monitor'))
+                ledger.path = str(Path(learner.output) / 'predictions.jsonl')
+        return learner
 
     def state_hash(self):
         # Includes all behavioral and optimization state, deterministic tensor serialization.
